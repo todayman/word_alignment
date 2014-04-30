@@ -11,6 +11,48 @@
 using std::make_pair;
 using std::make_tuple;
 
+class Sentence
+{
+    std::vector<std::string> words;
+
+    typedef decltype(words)::iterator iterator;
+    typedef decltype(words)::const_iterator const_iterator;
+    public:
+    Sentence(const std::string& whole)
+        : words()
+    {
+        std::istringstream strm(whole);
+        std::string tmp;
+        for( strm >> tmp; strm; strm >> tmp ) {
+            words.push_back(tmp);
+        }
+    }
+
+    iterator begin() {
+        return words.begin();
+    }
+    iterator end() {
+        return words.end();
+    }
+    const_iterator begin() const {
+        return words.cbegin();
+    }
+    const_iterator end() const {
+        return words.cend();
+    }
+
+    decltype(words)::size_type size() const {
+        return words.size();
+    }
+
+    std::string& operator[](unsigned idx) {
+        return words.at(idx);
+    }
+    const std::string& operator[](unsigned idx) const {
+        return words.at(idx);
+    }
+};
+
 // Not everything needs to be a class
 // If you're not using the self variable, that's a hint
 std::vector<std::string> readFile(const std::string& fileName, unsigned numLines)
@@ -43,13 +85,11 @@ template<typename Container>
 Vocabulary populateVolcabulary(const Container& sentence_list)
 {
     Vocabulary result;
-    for( const std::string& sentence : sentence_list )
+    for( const Sentence& sentence : sentence_list )
     {
-        std::istringstream strm(sentence);
-        std::string tmp;
-        for( strm >> tmp; strm; strm >> tmp ) // this is roughly equivalent to splitting on spaces
+        for( const std::string& word : sentence )
         {
-            result.insert(tmp);
+            result.insert(word);
         }
     }
     return result;
@@ -114,18 +154,18 @@ EmissionParameters initializeEmissionParameters(const Vocabulary& sourceVocab, c
 typedef std::unordered_map<std::tuple<unsigned, unsigned, unsigned, unsigned>, double> AlignmentParameters;
 // TODO rename variables
 AlignmentParameters initializeAlignmentParameters(
-    const std::vector<std::string>& sourceSentenceList,
-    const std::vector<std::string>& targetSentenceList
+    const std::vector<Sentence>& sourceSentenceList,
+    const std::vector<Sentence>& targetSentenceList
     )
 {
     AlignmentParameters alignment_parameters;
     std::unordered_set<std::tuple<unsigned, unsigned>> visited_keys;
     for( unsigned i = 0; i < sourceSentenceList.size() && i < targetSentenceList.size(); ++i )
     {
-        const std::string& sourceSentence = sourceSentenceList.at(i);
-        const std::string& targetSentence = targetSentenceList.at(i);
-        unsigned l = std::count(std::begin(sourceSentence), end(sourceSentence), ' ');
-        unsigned m = std::count(std::begin(targetSentence), end(targetSentence), ' ');
+        const Sentence& sourceSentence = sourceSentenceList.at(i);
+        const Sentence& targetSentence = targetSentenceList.at(i);
+        unsigned l = sourceSentence.size();
+        unsigned m = targetSentence.size();
 
         if( visited_keys.find(std::make_tuple(l, m)) != std::end(visited_keys) )
             continue;
@@ -231,14 +271,15 @@ void trainParameters(const Container1& sourceSentenceList, const Container2& tar
     for( unsigned iterations = 0; iterations < numIterations; ++iterations )
     {
         std::unordered_map<int, int> emission_counts;
-        std::unordered_map<int, int> alignment_conts;
+        std::unordered_map<int, int> alignment_counts;
         std::unordered_set<std::tuple<std::string, std::string>> modified_emission_keys;
         std::unordered_set<std::tuple<unsigned, unsigned, unsigned, unsigned>> modified_alignment_keys;
 
+        // TODO bounds check on target sentence list also
         for( unsigned current_training_idx = 0; current_training_idx < sourceSentenceList.size(); ++current_training_idx )
         {
-            std::vector<std::string> current_source_word_list = split(sourceSentenceList[current_training_idx], ' ');
-            std::vector<std::string> current_target_word_list = split(targetSentenceList[current_training_idx], ' ');
+            const Sentence& current_source_word_list = sourceSentenceList[current_training_idx];
+            const Sentence& current_target_word_list = targetSentenceList[current_training_idx];
             unsigned l = current_source_word_list.size();
             unsigned m = current_target_word_list.size();
 
@@ -311,8 +352,8 @@ void makeAndPrintPredictions(const Container1& sourceSentenceList, const Contain
 {
     for( unsigned current_idx = 0; current_idx < 1000; ++current_idx )
     {
-        std::vector<std::string> current_source_word_list = split(sourceSentenceList[current_idx], ' ');
-        std::vector<std::string> current_target_word_list = split(targetSentenceList[current_idx], ' ');
+        const Sentence& current_source_word_list = sourceSentenceList[current_idx];
+        const Sentence& current_target_word_list = targetSentenceList[current_idx];
         unsigned l = current_source_word_list.size();
         unsigned m = current_target_word_list.size();
 

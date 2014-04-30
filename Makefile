@@ -1,5 +1,5 @@
 CXX=clang++
-CXXFLAGS=-std=c++11 -stdlib=libc++ -g
+CXXFLAGS=-std=c++11 -stdlib=libc++ -g -Wall -Wextra -pedantic
 #CXX=g++
 #CXXFLAGS=-std=c++11 -g
 
