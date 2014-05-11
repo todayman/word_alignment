@@ -12,17 +12,20 @@ __author__ = 'tejasvamsingh'
 
 
 
-
+import itertools
+import time
 
 from HMMOperations.HMMAlignmentHandler import HMMAlignmentHander
-
-frenchFileHandle =  open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/small.f")
-englishFileHandle = open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/small.e")
+start = time.time()
+frenchFileHandle =  open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/hansards.f")
+englishFileHandle = open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/hansards.e")
 
 hiddenStatesLists  = []
 observationsLists = []
 
-for line in frenchFileHandle.readlines():
+numTrainingLines = 10000
+
+for line in itertools.islice(frenchFileHandle,numTrainingLines):
     englishSentence = englishFileHandle.readline().rstrip()
     frenchSentence = line.rstrip()
     englishSentenceWordList = englishSentence.split()
@@ -36,12 +39,13 @@ totalObservationsList = list(set([item for sublist in observationsLists for item
 
 hmmAlignmentHandlerObject = HMMAlignmentHander(totalHiddenStatesList,totalObservationsList)
 hmmAlignmentHandlerObject.TrainAligner(hiddenStatesLists,observationsLists)
-
-alignmentsList = hmmAlignmentHandlerObject.ComputeAlignments(hiddenStatesLists,observationsLists)
-
+alignmentsList=hmmAlignmentHandlerObject.ComputeAlignments(hiddenStatesLists,observationsLists)
 for alignment in alignmentsList:
     print(alignment)
 
+end = time.time()
+
+print("time :",end-start)
 
 
 

@@ -2,7 +2,15 @@ AUTHOR  : TEJASVAM SINGH
 
 UPDATES
 
+
+Refactored Likelihood computer into a class. Also, bypassed parameter initializer.
+Initialization is now done "on the fly" during Likelihood computation.
+Speedup of about 1 minute . 
+Currently takes 3 minutes for 1000 sentence pairs for 5 training iterations.
+
+
 Added The decoder module. Need to test for bugs.
+
 
 Re-factored into classes.
 Fixed training to go over all training instances.
