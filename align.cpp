@@ -11,6 +11,9 @@
 using std::make_pair;
 using std::make_tuple;
 
+// TODO list
+// do we allow duplicate sentences?
+
 class Sentence
 {
     std::vector<std::string> words;
@@ -136,7 +139,44 @@ namespace std {
 
 
 
-typedef std::unordered_map< std::tuple<std::string, std::string>, double> EmissionParameters;
+//typedef std::unordered_map< std::tuple<std::string, std::string>, double> EmissionParameters;
+class EmissionParameters
+{
+    std::unordered_map<std::tuple<std::string, std::string>, double> parameters;
+
+    public:
+    void setProbability(std::string source, std::string target, double prob)
+    {
+        parameters[make_tuple(source, target)] = prob;
+    }
+
+    double at(const std::string& source, const std::string& target) const
+    {
+        return parameters.at(make_tuple(source, target));
+    }
+
+    typedef decltype(parameters)::iterator iterator;
+    typedef decltype(parameters)::const_iterator const_iterator;
+
+    iterator begin() {
+        return parameters.begin();
+    }
+    iterator end() {
+        return parameters.end();
+    }
+
+    const_iterator begin() const {
+        return parameters.cbegin();
+    }
+    const_iterator end() const {
+        return parameters.cend();
+    }
+
+    iterator find(const std::string& source, const std::string& target) {
+        return parameters.find(make_tuple(source, target));
+    }
+};
+
 EmissionParameters initializeEmissionParameters(const Vocabulary& sourceVocab, const Vocabulary& targetVocab)
 {
     EmissionParameters params;
@@ -145,7 +185,7 @@ EmissionParameters initializeEmissionParameters(const Vocabulary& sourceVocab, c
     {
         for( const std::string& tgt : targetVocab )
         {
-            params.insert(std::make_pair( std::make_tuple(src, tgt), uniformProbability) );
+            params.setProbability(src, tgt, uniformProbability);
         }
     }
     return params;
@@ -153,6 +193,9 @@ EmissionParameters initializeEmissionParameters(const Vocabulary& sourceVocab, c
 
 typedef std::unordered_map<std::tuple<unsigned, unsigned, unsigned, unsigned>, double> AlignmentParameters;
 // TODO rename variables
+// Alignment parameters are:
+// the probability that in a source sentence of length l, and a target sentence of length m,
+// that word indexed by k in the source sentence generates the word indexed by j in the target sentence
 AlignmentParameters initializeAlignmentParameters(
     const std::vector<Sentence>& sourceSentenceList,
     const std::vector<Sentence>& targetSentenceList
@@ -167,6 +210,7 @@ AlignmentParameters initializeAlignmentParameters(
         unsigned l = sourceSentence.size();
         unsigned m = targetSentence.size();
 
+        // TODO this conditional doesn't make any sense at all
         if( visited_keys.find(std::make_tuple(l, m)) != std::end(visited_keys) )
             continue;
 
@@ -293,12 +337,12 @@ void trainParameters(const Container1& sourceSentenceList, const Container2& tar
                     for( const std::string& w : current_source_word_list )
                     {
                         auto tuple_key = make_tuple(w, target_word);
-                        EmissionParameters::iterator location = emission_params.find(tuple_key);
-                        if( location != end(emission_params) )
+                        EmissionParameters::iterator location = emission_params.find(w, target_word);
+                        if( location != emission_params.end() )
                             denominator += location->second;
                         else {
                             denominator += 1.0 / targetVocabSize;
-                            emission_params.insert(make_pair(tuple_key, 1.0 / targetVocabSize));
+                            emission_params.setProbability(w, target_word, 1.0 / targetVocabSize);
                         }
                     }
                 }
@@ -317,7 +361,7 @@ void trainParameters(const Container1& sourceSentenceList, const Container2& tar
                             prob = location->second;
                         }
                         denominator +=
-                               prob * emission_params[make_tuple(current_source_word_list[count], target_word)];
+                               prob * emission_params.at(current_source_word_list[count], target_word);
                     }
                 }
 
@@ -331,7 +375,7 @@ void trainParameters(const Container1& sourceSentenceList, const Container2& tar
                     modified_emission_keys.insert(emission_key);
                     modified_alignment_keys.insert(align_key);
 
-                    double delta = emission_params[emission_key];
+                    double delta = emission_params.at(source_word, target_word);
                     if( modelNo == 2 )
                         delta *= align_params[align_key];
                     delta /= denominator;
@@ -370,7 +414,7 @@ void makeAndPrintPredictions(const Container1& sourceSentenceList, const Contain
             {
                 const std::string& source_word = current_source_word_list[j];
                 double current_val =
-                      emissionParams.at(make_tuple(source_word, target_word))
+                      emissionParams.at(source_word, target_word)
                     * alignmentParams.at(make_tuple(j,i,l,m))
                     * pow(distanceParameter, abs(i-j));
                 if( current_max < current_val )
