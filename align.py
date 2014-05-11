@@ -172,14 +172,9 @@ def trainParameters(englishSentenceList, frenchSentenceList, frenchVocabSize, em
 
                 if modelNo == 1:                        
                     for w in currentEnglishExampleWordList:
-                        try:
-                            denominator += emissionParameters.getProbability(w, frenchWord)
-                        except KeyError:
-                            emissionParameters.setProbbility(w, frenchWord, 1 / float(frenchVocabSize))
-                            denominator += emissionParameters.getProbability(w, frenchWord)
+                        denominator += emissionParameters.getProbability(w, frenchWord)
 
                 elif modelNo == 2:
-                    #denominator=sum([alignmentParameters[(count,i,l,m)]*emissionParameters[(currentEnglishExampleWordList[count],frenchWord)] for count in xrange(0,l)])                        
                     for count in xrange(0, l):
                         try:
                             denominator = denominator + (alignmentParameters[(count, i, l, m)] *
