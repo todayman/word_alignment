@@ -6,7 +6,7 @@ xrange = range
 
 class Sentence:
     def __init__(self, text):
-        self.words = text.split('\w')
+        self.words = text.split(' ')
 
     def __getitem__(self, index):
         return self.words[index]
@@ -152,7 +152,7 @@ class Parameter:
 
 
 # this class trains the alignment parameters using EM.
-def trainParameters(englishSentenceList, frenchSentenceList, frenchVocabSize, emissionParameters, alignmentParameters, numIterations, modelNo):        
+def trainParameters(englishSentenceList, frenchSentenceList, frenchVocabSize, emissionParameters, alignmentParameters, numIterations, modelNo):
     for iterations in xrange(0, numIterations):
         emissionCounts = {}
         alignmentCounts = {}
@@ -162,10 +162,10 @@ def trainParameters(englishSentenceList, frenchSentenceList, frenchVocabSize, em
         for currentTrainingExample in xrange(0, len(englishSentenceList)):
             currentFrenchExampleWordList = frenchSentenceList[currentTrainingExample]
             currentEnglishExampleWordList = englishSentenceList[currentTrainingExample]
-            
+
             l = len(currentEnglishExampleWordList)
             m = len(currentFrenchExampleWordList)
-            
+
             for i in xrange(0, len(currentFrenchExampleWordList)):
                 frenchWord = currentFrenchExampleWordList[i]
                 denominator = 0
