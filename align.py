@@ -6,7 +6,7 @@ xrange = range
 
 class Sentence:
     def __init__(self, text):
-        self.words = text.split(' ')
+        self.words = text.split()
 
     def __getitem__(self, index):
         return self.words[index]
@@ -105,7 +105,7 @@ def initializeDistanceParameters(developmentAlignmentsList):
     alignmentCount = {}
 
     for alignmentLine in developmentAlignmentsList:
-        alignments = alignmentLine.strip().split(' ')
+        alignments = alignmentLine.strip().split()
         for alignment in alignments:
             alignmentParts = []
             # '?' means uncertain alignment
