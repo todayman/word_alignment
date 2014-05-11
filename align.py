@@ -76,9 +76,7 @@ class AlignmentParameters:
     def __init__(self, sourceSentenceList, targetSentenceList):
         self.alignmentParameters = {}
         visitedKeys = set()
-        for i in range(0, len(sourceSentenceList)):
-            currentSourceSentence = sourceSentenceList[i]
-            currentTargetSentence = targetSentenceList[i]
+        for (currentSourceSentence, currentTargetSentence) in zip(sourceSentenceList, targetSentenceList):
             l = len(currentSourceSentence)
             m = len(currentTargetSentence)
 
@@ -145,11 +143,8 @@ def trainParameters(englishSentenceList, frenchSentenceList, frenchVocabSize, em
         alignmentCounts = {}
         modifiedEmissionKeys = []
         modifiedAlignmentKeys = []
-        
-        for currentTrainingExample in xrange(0, len(englishSentenceList)):
-            currentFrenchExampleWordList = frenchSentenceList[currentTrainingExample]
-            currentEnglishExampleWordList = englishSentenceList[currentTrainingExample]
 
+        for (currentEnglishExampleWordList, currentFrenchExampleWordList) in zip(englishSentenceList, frenchSentenceList):
             l = len(currentEnglishExampleWordList)
             m = len(currentFrenchExampleWordList)
 
@@ -157,7 +152,7 @@ def trainParameters(englishSentenceList, frenchSentenceList, frenchVocabSize, em
                 frenchWord = currentFrenchExampleWordList[i]
                 denominator = 0
 
-                if modelNo == 1:                        
+                if modelNo == 1:
                     for w in currentEnglishExampleWordList:
                         denominator += emissionParameters.getProbability(w, frenchWord)
 
