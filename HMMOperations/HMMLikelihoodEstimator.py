@@ -1,6 +1,7 @@
 __author__ = 'tejasvamsingh'
 
 
+
 def ForwardProbabilityComputer(hiddenStatesList, observationsList,
                                emissionProbabilityDict,transitionProbabilityDict):
 
@@ -10,21 +11,30 @@ def ForwardProbabilityComputer(hiddenStatesList, observationsList,
 
     for timeStep in xrange(0,len(observationsList)):
         forwardProbabilityDict[timeStep]=[]
+        forwardProbList = []
+        scaleFactor = 0
         for hiddenState in hiddenStatesList:
-            forwardProb =0.0
+            forwardProb = 0.0
             for previousStateEntry in forwardProbabilityDict[timeStep-1]:
                 previousState = previousStateEntry[0]
-                previousStateForwardProbability = previousStateEntry[1]
+                previousStateForwardProbability = float(previousStateEntry[1])
                 forwardProb=forwardProb + (previousStateForwardProbability*transitionProbabilityDict[(hiddenState,previousState)])
-            forwardProb=forwardProb * emissionProbabilityDict[(observationsList[timeStep],hiddenState)]
-            forwardProbabilityDict[timeStep].append((hiddenState,forwardProb))
+
+            forwardProb = forwardProb*emissionProbabilityDict[(observationsList[timeStep],hiddenState)]
+            forwardProbList.append((hiddenState,forwardProb))
+            scaleFactor =scaleFactor + forwardProb
+
+
+        for hiddenState,forwardProb in forwardProbList:
+            forwardProbabilityDict[timeStep].append((hiddenState,float(forwardProb)/float(scaleFactor)))
+
 
     # transition to the end state </s>
 
     forwardProb =0.0
     for previousStateEntry in forwardProbabilityDict[len(observationsList)-1]:
         previousState = previousStateEntry[0]
-        previousStateForwardProbability = previousStateEntry[1]
+        previousStateForwardProbability = float(previousStateEntry[1])
         forwardProb=forwardProb + (previousStateForwardProbability*transitionProbabilityDict[("</s>",previousState)])
 
     forwardProbabilityDict[len(observationsList)] = [("</s>",forwardProb)]
@@ -37,43 +47,65 @@ def BackWardProbabilityComputer(hiddenStatesList,observationsList,
 
     BackwardProbabilityDict={}
 
-    BackwardProbabilityDict[len(observationsList)]=[("</s>",1.0)]
 
+    BackwardProbabilityDict[len(observationsList)] = [("</s>",1.0)]
     BackwardProbabilityDict[len(observationsList)-1] = []
+    scaleFactor = 0.0
 
+    backProbList= []
     for hiddenState in hiddenStatesList:
-        BackwardProbabilityDict[len(observationsList)-1].append((hiddenState,transitionProbabilityDict[("</s>",hiddenState)]))
+        backProbList.append((hiddenState,transitionProbabilityDict[("</s>",hiddenState)]))
+        scaleFactor = scaleFactor +  transitionProbabilityDict[("</s>",hiddenState)]
+
+    for hiddenState,backwardProb in backProbList:
+        BackwardProbabilityDict[len(observationsList)-1].append((hiddenState,float(backwardProb)/float(scaleFactor)))
+
+
 
     for timeStep in xrange(len(observationsList)-2,-1,-1):
         BackwardProbabilityDict[timeStep]=[]
+        scaleFactor =0.0
+        backProbList=[]
         for hiddenState in hiddenStatesList:
            backwardProb = 0.0
            for nextStateEntry in BackwardProbabilityDict[timeStep+1]:
                nextState=nextStateEntry[0]
-               nextStateBackwardProbability = nextStateEntry[1]
+               nextStateBackwardProbability = float(nextStateEntry[1])
+
                backwardProb = backwardProb + (nextStateBackwardProbability*
                                               transitionProbabilityDict[(nextState,hiddenState)]*
                                               emissionProbabilityDict[(observationsList[timeStep+1],nextState)])
-           BackwardProbabilityDict[timeStep].append((hiddenState,backwardProb))
+
+           backProbList.append((hiddenState,backwardProb))
+           scaleFactor = scaleFactor + backwardProb
+
+
+        for hiddenState,prob in backProbList:
+            BackwardProbabilityDict[timeStep].append((hiddenState,float(prob)/float(scaleFactor)))
 
     BackwardProbabilityDict[-1]=[]
     backwardProb=0.0
     for nextStateEntry in BackwardProbabilityDict[0]:
         nextState=nextStateEntry[0]
-        nextStateBackwardProbability = nextStateEntry[1]
+        nextStateBackwardProbability = float(nextStateEntry[1])
         backwardProb = backwardProb + (nextStateBackwardProbability*
                                               transitionProbabilityDict[(nextState,"<s>")]*
                                               emissionProbabilityDict[(observationsList[0],nextState)])
 
     BackwardProbabilityDict[-1].append(("<s>",backwardProb))
 
-    return BackwardProbabilityDict;
+    return BackwardProbabilityDict
 
 def ComputeDataLikelihood(hiddenStatesList, observationsList, emissionProbabilityDict, transitionProbabilityDict):
 
     forwardProbabilityDict = ForwardProbabilityComputer(hiddenStatesList,observationsList,emissionProbabilityDict,transitionProbabilityDict)
     backwardProababilityDict = BackWardProbabilityComputer(hiddenStatesList,observationsList,emissionProbabilityDict,transitionProbabilityDict)
 
-    dataLikelihood = forwardProbabilityDict[len(observationsList)][0][1]
+    dataLikelihood = 0.0
+
+
+    for index in xrange(0,len(hiddenStatesList)):
+        dataLikelihood = dataLikelihood + (backwardProababilityDict[0][index][1] * forwardProbabilityDict[0][index][1])
+
 
     return (forwardProbabilityDict,backwardProababilityDict,dataLikelihood)

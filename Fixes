@@ -1,0 +1,12 @@
+AUTHOR  : TEJASVAM SINGH
+
+UPDATES
+
+Added The decoder module. Need to test for bugs.
+
+Re-factored into classes.
+Fixed training to go over all training instances.
+Fixed a serious underflow issue that was causing division by zero errors all over the place.
+
+Resulting algorithm seems to be working fine except I'm not sure that it is fast enough.
+I created a small test set of 20 sentences to test and it still takes a few seconds to compute indicating that doing training over the entire set may be prohibitive as of now.

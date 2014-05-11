@@ -11,20 +11,46 @@ __author__ = 'tejasvamsingh'
 # Now... what are the initial parameters ... trained from Model 1 , 2  ?
 
 
-from HMMOperations.HMMAlignmentHandler import ComputeAlignments
 
 
-frenchFileHandle =  open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/hansards.f")
-englishFileHandle = open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/hansards.e")
+
+from HMMOperations.HMMAlignmentHandler import HMMAlignmentHander
+
+frenchFileHandle =  open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/small.f")
+englishFileHandle = open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/small.e")
+
+hiddenStatesLists  = []
+observationsLists = []
 
 for line in frenchFileHandle.readlines():
     englishSentence = englishFileHandle.readline().rstrip()
     frenchSentence = line.rstrip()
-    hiddenStatesList = englishSentence.split()
-    observationList = frenchSentence.split()
-    ComputeAlignments(hiddenStatesList,observationList)
+    englishSentenceWordList = englishSentence.split()
+    frenchSentenceWordList = frenchSentence.split()
+    hiddenStatesLists.append(englishSentenceWordList)
+    observationsLists.append(frenchSentenceWordList)
 
-    break
+
+totalHiddenStatesList = list(set([item for sublist in hiddenStatesLists for item in sublist]))
+totalObservationsList = list(set([item for sublist in observationsLists for item in sublist]))
+
+hmmAlignmentHandlerObject = HMMAlignmentHander(totalHiddenStatesList,totalObservationsList)
+hmmAlignmentHandlerObject.TrainAligner(hiddenStatesLists,observationsLists)
+
+alignmentsList = hmmAlignmentHandlerObject.ComputeAlignments(hiddenStatesLists,observationsLists)
+
+for alignment in alignmentsList:
+    print(alignment)
+
+
+
+
+
+
+
+
+
+
 
 
 
