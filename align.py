@@ -138,19 +138,6 @@ def initializeDistanceParameters(developmentAlignmentsList):
     return float(sum(DistanceParameters)) / float(len(DistanceParameters))
 
 
-# this class creates parameter objects.
-class Parameter:
-    def __init__(self, emissionParameters, alignmentParameters):
-        self.emissionParameters = emissionParameters
-        self.alignmentParameters = alignmentParameters
-
-    def getEmissionParameters(self):
-        return self.emissionParameters
-
-    def getAlignmentParameters(self):
-        return self.alignmentParameters
-
-
 # this class trains the alignment parameters using EM.
 def trainParameters(englishSentenceList, frenchSentenceList, frenchVocabSize, emissionParameters, alignmentParameters, numIterations, modelNo):
     for iterations in xrange(0, numIterations):
