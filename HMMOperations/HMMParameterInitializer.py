@@ -1,5 +1,8 @@
 __author__ = 'tejasvamsingh'
 
+
+
+
 # remember parameters keys are (x,y) for p(x|y)
 
 def initializeParameters(hiddenStateList,observationList):
