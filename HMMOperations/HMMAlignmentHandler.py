@@ -3,7 +3,7 @@ __author__ = 'tejasvamsingh'
 from HMMParameterInitializer import initializeParameters
 from HMMLikelihoodEstimator import ComputeDataLikelihood
 from HMMParameterTrainer import HMMParameterTrainer
-
+from HMMViterbiDecoder import HMMViterbiDecoder
 
 
 class HMMAlignmentHander:
@@ -31,6 +31,17 @@ class HMMAlignmentHander:
                                                           forwardProbabilityDict,backwardProbabilityDict,dataLikelihood)
 
             hmmParameterTrainerObject.MaximizationStep(self.transitionProbabilityDict,self.emissionProbabilityDict)
+
+
+    def ComputeAlignments(self,hiddenStatesLists,observationsLists):
+
+        hmmViterbiDecoderObject = HMMViterbiDecoder(self.transitionProbabilityDict,self.emissionProbabilityDict)
+        alignmentList = []
+
+        for hiddenStatesList,observationsList in zip(hiddenStatesLists,observationsLists):
+            alignmentList.append(hmmViterbiDecoderObject.Decode(hiddenStatesList,observationsList))
+
+        return alignmentList
 
 
 

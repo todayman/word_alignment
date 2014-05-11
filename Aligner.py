@@ -16,8 +16,8 @@ __author__ = 'tejasvamsingh'
 
 from HMMOperations.HMMAlignmentHandler import HMMAlignmentHander
 
-frenchFileHandle =  open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/hansards.f")
-englishFileHandle = open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/hansards.e")
+frenchFileHandle =  open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/small.f")
+englishFileHandle = open("/Users/tejasvamsingh/Working/Projects/ML/Code/MLAligner/data/small.e")
 
 hiddenStatesLists  = []
 observationsLists = []
@@ -36,6 +36,11 @@ totalObservationsList = list(set([item for sublist in observationsLists for item
 
 hmmAlignmentHandlerObject = HMMAlignmentHander(totalHiddenStatesList,totalObservationsList)
 hmmAlignmentHandlerObject.TrainAligner(hiddenStatesLists,observationsLists)
+
+alignmentsList = hmmAlignmentHandlerObject.ComputeAlignments(hiddenStatesLists,observationsLists)
+
+for alignment in alignmentsList:
+    print(alignment)
 
 
 

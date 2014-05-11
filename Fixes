@@ -1,8 +1,8 @@
 AUTHOR  : TEJASVAM SINGH
 
-FIXES
+UPDATES
 
-
+Added The decoder module. Need to test for bugs.
 
 Re-factored into classes.
 Fixed training to go over all training instances.
