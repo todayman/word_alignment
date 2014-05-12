@@ -1,4 +1,4 @@
-__author__ = 'tejasvamsingh'
+#! /usr/bin/env python2
 
 from HMMParameterInitializer import initializeParameters
 from HMMLikelihoodEstimator import HMMLikelihoodEstimator

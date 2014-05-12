@@ -1,6 +1,4 @@
-__author__ = 'tejasvamsingh'
-
-
+#! /usr/bin/env python2
 
 
 # remember parameters keys are (x,y) for p(x|y)

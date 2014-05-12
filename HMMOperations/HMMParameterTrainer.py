@@ -1,4 +1,4 @@
-__author__ = 'tejasvamsingh'
+#! /usr/bin/env python2
 
 class HMMParameterTrainer:
     def __init__(self):
