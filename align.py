@@ -1,9 +1,6 @@
 #! /usr/bin/env python2
 
 
-xrange = range
-
-
 class Sentence:
     def __init__(self, text):
         self.words = text.split()
@@ -28,7 +25,7 @@ class SentencePair:
                 self.alignment[(j, k)] = 1 / float(len(first))
 
 
-def readFile(fileName, numLines):
+def readFile(fileName, numLines=-1):
     data = []
     i = 0
     with open(fileName) as fileObject:
@@ -207,10 +204,29 @@ def makeAndPrintPredictions(sentencePairs,
 
 
 def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description='IBM Model 1&2')
+    parser.add_argument('source_filename', type=argparse.FileType('r'),
+                        help='file with sentences in the source language, i.e. English',
+                        default='data/hansards.e')
+    parser.add_argument('target_filename', type=argparse.FileType('r'),
+                        help='file with sentences in the target language, i.e. French',
+                        default='data/hansards.f')
+    parser.add_argument('align_filename', type=str,
+                        help='file with pre-done alignments',
+                        default='data/hansards.a')
+    parser.add_argument('--sentence_count', type=int,
+                        help='number of sentences to read and train on',
+                        default=100)
+    parser.add_argument('--iterations', type=int,
+                        help='number of iterations of EM',
+                        default=100)
+
     # read the files
-    englishSentenceList = readSentenceFile('data/hansards.e', 100)
-    frenchSentenceList = readSentenceFile('data/hansards.f', 100)
-    developmentAlignmentsList = readFile('data/hansards.a', 37)
+    englishSentenceList = readSentenceFile(parser.source_filename, parser.sentence_count)
+    frenchSentenceList = readSentenceFile(parser.target_filename, parser.sentence_count)
+    developmentAlignmentsList = readFile(parser.align_filename)
 
     # get the french vocab
     englishVocabulary = populateVocabulary(englishSentenceList)
@@ -221,17 +237,16 @@ def main():
 
     # create the parameters for training
     emissionParameters = EmissionParameters(englishVocabulary, frenchVocabulary)
-    #alignmentParameters = AlignmentParameters(englishSentenceList, frenchSentenceList)
     sentencePairs = [SentencePair(x, y) for (x, y) in zip(englishSentenceList, frenchSentenceList)]
     frenchVocabSize = len(frenchVocabulary)
 
     # train the EM parameters for model 1
     trainParameters(sentencePairs, frenchVocabSize,
-                    emissionParameters, 10, 1)
+                    emissionParameters, parser.iterations, 1)
 
     # train the EM parameters for model 2
     trainParameters(sentencePairs, frenchVocabSize,
-                    emissionParameters, 10, 2)
+                    emissionParameters, parser.iterations, 2)
 
     # write the predictions to file
     makeAndPrintPredictions(sentencePairs,
