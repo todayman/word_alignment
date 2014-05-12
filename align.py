@@ -116,10 +116,7 @@ def initializeDistanceParameters(developmentAlignmentsList):
 
 
 def incrementOrInsert(dictionary, key, amount):
-    try:
-        dictionary[key] += amount
-    except KeyError:
-        dictionary[key] = amount
+    dictionary[key] = dictionary.get(key, 0) + amount
 
 # this class trains the alignment parameters using EM.
 def trainParameters(sentencePairs, frenchVocabSize, emissionParameters, numIterations, modelNo):

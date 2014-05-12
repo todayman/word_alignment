@@ -3,7 +3,7 @@
 
 class HMMLikelihoodEstimator:
 
-    def __init__(self,uniformEmissionProbability,uniformTransitionProbability):
+    def __init__(self,uniformEmissionProbability, uniformTransitionProbability):
         self.uniformEmissionProbability = uniformEmissionProbability
         self.uniformTransitionProbability = uniformTransitionProbability
 
@@ -23,16 +23,8 @@ class HMMLikelihoodEstimator:
                 for previousStateEntry in forwardProbabilityDict[timeStep - 1]:
                     previousState = previousStateEntry[0]
                     previousStateForwardProbability = float(previousStateEntry[1])
-                    try:
-                        forwardProb = forwardProb + (previousStateForwardProbability * transitionProbabilityDict[(hiddenState, previousState)])
-                    except:
-                        transitionProbabilityDict[(hiddenState, previousState)] = self.uniformTransitionProbability
-                        forwardProb = forwardProb + (previousStateForwardProbability * transitionProbabilityDict[(hiddenState, previousState)])
-                try:
-                    forwardProb = forwardProb * emissionProbabilityDict[(observationsList[timeStep], hiddenState)]
-                except:
-                    emissionProbabilityDict[(observationsList[timeStep], hiddenState)] = self.uniformEmissionProbability
-                    forwardProb = forwardProb * emissionProbabilityDict[(observationsList[timeStep], hiddenState)]
+                    forwardProb = forwardProb + (previousStateForwardProbability * transitionProbabilityDict.get((hiddenState, previousState), self.uniformTransitionProbability))
+                forwardProb = forwardProb * emissionProbabilityDict.get((observationsList[timeStep], hiddenState), self.uniformEmissionProbability)
 
                 forwardProbList.append((hiddenState, forwardProb))
                 scaleFactor = scaleFactor + forwardProb

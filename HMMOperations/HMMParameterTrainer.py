@@ -17,43 +17,23 @@ class HMMParameterTrainer:
                 for backwardStateEntry in backwardProbabilityDict[timeStep + 1]:
                     nextState = backwardStateEntry[0]
                     nextStateBackwardProbability = backwardStateEntry[1]
-                    try:
-                        self.transitionCountDict[(nextState, currentState)] = self.transitionCountDict[(nextState, currentState)] + (
-                            currentStateForwardProbability * nextStateBackwardProbability *
-                            transitionProbabilityDict[(nextState, currentState)] * emissionProbabilityDict[(observationsList[timeStep + 1], nextState)])
-                    except KeyError:
-                        self.transitionCountDict[(nextState, currentState)] = (
+                    self.transitionCountDict[(nextState, currentState)] = self.transitionCountDict.get((nextState, currentState), 0) + (
                         currentStateForwardProbability * nextStateBackwardProbability *
                         transitionProbabilityDict[(nextState, currentState)] * emissionProbabilityDict[(observationsList[timeStep + 1], nextState)])
-                    try:
-                        self.singleTransitionCountDict[(currentState,)] = self.singleTransitionCountDict[(currentState,)] + (
-                            currentStateForwardProbability * nextStateBackwardProbability *
-                            transitionProbabilityDict[(nextState,currentState)] * emissionProbabilityDict[(observationsList[timeStep + 1], nextState)])
-                    except KeyError:
-                        self.singleTransitionCountDict[(currentState,)] = (
+                    self.singleTransitionCountDict[(currentState,)] = self.singleTransitionCountDict.get((currentState,), 0) + (
                         currentStateForwardProbability * nextStateBackwardProbability *
-                        transitionProbabilityDict[(nextState,currentState)] * emissionProbabilityDict[(observationsList[timeStep + 1],nextState)])
+                        transitionProbabilityDict[(nextState,currentState)] * emissionProbabilityDict[(observationsList[timeStep + 1], nextState)])
 
             for index in xrange(0, len(hiddenStatesList)):
                 currentState = hiddenStatesList[index]
-                try:
-                    self.emissionCountDict[(observationsList[timeStep+1], currentState)] = \
-                        self.emissionCountDict[(observationsList[timeStep+1], currentState)] + (
-                            forwardProbabilityDict[timeStep+1][index][1] * backwardProbabilityDict[timeStep + 1][index][1]
-                    )
-                except KeyError:
-                    self.emissionCountDict[(observationsList[timeStep+1], currentState)] = (
-                            forwardProbabilityDict[timeStep+1][index][1] * backwardProbabilityDict[timeStep + 1][index][1]
-                    )
-                try:
-                    self.singleEmissionCountDict[(currentState,)] = \
-                        self.singleEmissionCountDict[(currentState,)] + (
-                            forwardProbabilityDict[timeStep + 1][index][1] * backwardProbabilityDict[timeStep + 1][index][1]
-                    )
-                except KeyError:
-                    self.singleEmissionCountDict[(currentState,)] = (
-                            forwardProbabilityDict[timeStep + 1][index][1] * backwardProbabilityDict[timeStep + 1][index][1]
-                    )
+                self.emissionCountDict[(observationsList[timeStep+1], currentState)] = \
+                    self.emissionCountDict.get((observationsList[timeStep+1], currentState), 0) + (
+                        forwardProbabilityDict[timeStep+1][index][1] * backwardProbabilityDict[timeStep + 1][index][1]
+                )
+                self.singleEmissionCountDict[(currentState,)] = \
+                    self.singleEmissionCountDict.get((currentState,), 0) + (
+                        forwardProbabilityDict[timeStep + 1][index][1] * backwardProbabilityDict[timeStep + 1][index][1]
+                )
 
 
     def MaximizationStep(self,transitionProbabilityDict, emissionProbabilityDict):
