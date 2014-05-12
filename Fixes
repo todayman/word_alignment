@@ -3,6 +3,13 @@ AUTHOR  : TEJASVAM SINGH
 UPDATES
 
 
+Transitions now conditioned on hidden state length.
+Also, Aligner calls method in original align.py to fetch emission paramaters trained by IBM Models.
+Trained IBM Model 1 on 10000 sentence pairs for 10 iterations followed by 3 iterations of HMM on 10000 sentences pairs.
+AER of .45 was  obtained.
+
+
+
 Refactored Likelihood computer into a class. Also, bypassed parameter initializer.
 Initialization is now done "on the fly" during Likelihood computation.
 Speedup of about 1 minute . 
