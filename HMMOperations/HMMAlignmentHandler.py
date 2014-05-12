@@ -1,7 +1,7 @@
 __author__ = 'tejasvamsingh'
 
 from HMMParameterInitializer import initializeParameters
-from HMMLikelihoodEstimator import ComputeDataLikelihood
+from HMMLikelihoodEstimator import HMMLikelihoodEstimator
 from HMMParameterTrainer import HMMParameterTrainer
 from HMMViterbiDecoder import HMMViterbiDecoder
 
@@ -9,22 +9,31 @@ from HMMViterbiDecoder import HMMViterbiDecoder
 class HMMAlignmentHander:
 
     def __init__(self,hiddenStatesList,observationsList):
-        self.emissionProbabilityDict,self.transitionProbabilityDict=\
-            initializeParameters(hiddenStatesList,observationsList)
+        self.emissionProbabilityDict={}
+        self.transitionProbabilityDict={}
+        self.uniformEmissionProbability = float(1)/float(len(observationsList))
+        self.uniformTransitionProbability = float(1)/float(len(hiddenStatesList))
 
     def TrainAligner(self,hiddenStatesLists,observationsLists):
 
-        for iterationNumber in xrange(0,5):
+        hmmLikelihoodEstimatorObject  = HMMLikelihoodEstimator(self.uniformEmissionProbability,self.uniformTransitionProbability)
 
+        for iterationNumber in xrange(0,5):
+            numSentences=0
             hmmParameterTrainerObject = HMMParameterTrainer()
 
             for hiddenStatesList,observationsList in zip(hiddenStatesLists,observationsLists):
 
+                if numSentences==1000:
+                    break
 
-                forwardProbabilityDict,backwardProbabilityDict, dataLikelihood = ComputeDataLikelihood(hiddenStatesList,
+                numSentences =numSentences+1
+
+
+                forwardProbabilityDict,backwardProbabilityDict, dataLikelihood = hmmLikelihoodEstimatorObject.ComputeDataLikelihood(hiddenStatesList,
                                                                                                        observationsList,
                                                                                                        self.emissionProbabilityDict,
-                                                                                                       self.transitionProbabilityDict)
+                                                                                                       self.transitionProbabilityDict,)
 
                 hmmParameterTrainerObject.ExpectationStep(hiddenStatesList,observationsList,
                                                           self.emissionProbabilityDict,self.transitionProbabilityDict,
