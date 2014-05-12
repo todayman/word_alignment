@@ -18,6 +18,16 @@ class Sentence:
         return len(self.words)
 
 
+class SentencePair:
+    def __init__(self, first, second):
+        self.source = first
+        self.target = second
+        self.alignment = {}
+        for k in xrange(0, len(second)):
+            for j in xrange(0, len(first)):
+                self.alignment[(j, k)] = 1 / float(len(first))
+
+
 def readFile(fileName, numLines):
     data = []
     i = 0
@@ -55,12 +65,6 @@ class EmissionParameters:
         self._changedParameters = {}
         print("initializing " + str(len(sourceVocabulary) * len(targetVocabulary)) + " parameters")
         self._uniformProbability = 1 / float(len(targetVocabulary))
-        # for sourceWord in sourceVocabulary:
-        #     for targetWord in targetVocabulary:
-        #         # TODO What's the form of this tuple supposed to be?
-        #         self.setProbability(sourceWord, targetWord, uniformProbability)
-        #         if len(self._parameters) % 10000 == 0:
-        #             print("Done " + str(len(self._parameters)) + " parameters")
 
     def setProbability(self, source, target, prob):
         self._changedParameters[(source, target)] = prob
@@ -71,28 +75,6 @@ class EmissionParameters:
         else:
             return self._uniformProbability
 
-
-class AlignmentParameters:
-    def __init__(self, sourceSentenceList, targetSentenceList):
-        self.alignmentParameters = {}
-        visitedKeys = set()
-        for (currentSourceSentence, currentTargetSentence) in zip(sourceSentenceList, targetSentenceList):
-            l = len(currentSourceSentence)
-            m = len(currentTargetSentence)
-
-            if (l, m) in visitedKeys:
-                continue
-
-            for k in xrange(0, m):
-                for j in xrange(0, l):
-                    self.alignmentParameters[(j, k, l, m)] = 1 / float(l)
-            visitedKeys.add((l, m))
-
-    def __getitem__(self, item):
-        return self.alignmentParameters[item]
-
-    def __setitem__(self, item, val):
-        self.alignmentParameters[item] = val
 
 # Takes in pre-aligned data, measures how far apart the corresponding words
 # are from each other.
@@ -136,66 +118,62 @@ def initializeDistanceParameters(developmentAlignmentsList):
     return float(sum(DistanceParameters)) / float(len(DistanceParameters))
 
 
+def incrementOrInsert(dictionary, key, amount):
+    try:
+        dictionary[key] += amount
+    except KeyError:
+        dictionary[key] = amount
+
 # this class trains the alignment parameters using EM.
-def trainParameters(englishSentenceList, frenchSentenceList, frenchVocabSize, emissionParameters, alignmentParameters, numIterations, modelNo):
-    for iterations in xrange(0, numIterations):
+def trainParameters(sentencePairs, frenchVocabSize, emissionParameters, numIterations, modelNo):
+    for iteration in xrange(0, numIterations):
+        print('iteration = ' + str(iteration))
         emissionCounts = {}
         alignmentCounts = {}
         modifiedEmissionKeys = []
         modifiedAlignmentKeys = []
 
-        for (currentEnglishExampleWordList, currentFrenchExampleWordList) in zip(englishSentenceList, frenchSentenceList):
-            l = len(currentEnglishExampleWordList)
-            m = len(currentFrenchExampleWordList)
+        for pair in sentencePairs:
+            l = len(pair.source)
+            m = len(pair.target)
 
-            for i in xrange(0, len(currentFrenchExampleWordList)):
-                frenchWord = currentFrenchExampleWordList[i]
+            for i in xrange(0, len(pair.target)):
+                targetWord = pair.target[i]
                 denominator = 0
 
                 if modelNo == 1:
-                    for w in currentEnglishExampleWordList:
-                        denominator += emissionParameters.getProbability(w, frenchWord)
+                    for w in pair.source:
+                        denominator += emissionParameters.getProbability(w, targetWord)
 
                 elif modelNo == 2:
-                    for count in xrange(0, l):
+                    for count in xrange(0, len(pair.source)):
                         try:
-                            denominator = denominator + (alignmentParameters[(count, i, l, m)] *
-                                    emissionParameters.getProbability(currentEnglishExampleWordList[count], frenchWord))
+                            #print('pair.alignment is ' + str(pair.alignment))
+                            denominator = denominator + (pair.alignment[(count, i)] *
+                                    emissionParameters.getProbability(pair.source[count], targetWord))
                         except KeyError:
-                            alignmentParameters[(count,i,l,m)] = 1 / float(l)
-                            denominator = denominator + (alignmentParameters[(count, i, l, m)] *
-                                    emissionParameters[(currentEnglishExampleWordList[count], frenchWord)])
+                            pair.alignment[(count, i)] = 1 / float(len(pair.source))
+                            denominator += (pair.alignment[(count, i)] *
+                                    emissionParameters[(pair.source[count], targetWord)])
 
-                for j in xrange(0, len(currentEnglishExampleWordList)):
-                    englishWord = currentEnglishExampleWordList[j]
-                    modifiedEmissionKeys.append((englishWord, frenchWord))
-                    modifiedAlignmentKeys.append((j, i, l, m))
+                for j in xrange(0, len(pair.source)):
+                    sourceWord = pair.source[j]
+                    modifiedEmissionKeys.append((sourceWord, targetWord))
+                    modifiedAlignmentKeys.append((j, i, pair))
 
                     # calculate the delta parameter
-                    delta = emissionParameters.getProbability(englishWord, frenchWord)
+                    delta = emissionParameters.getProbability(sourceWord, targetWord)
 
                     if modelNo == 2:
-                        delta = delta * alignmentParameters[(j, i, l, m)]
+                        delta = delta * pair.alignment[(j, i)]
 
                     delta = float(delta) / float(denominator)
 
                     # update the counts
-                    try:
-                        emissionCounts[(englishWord, frenchWord)] += delta
-                    except KeyError:
-                        emissionCounts[(englishWord, frenchWord)] = delta
-                    try:
-                        emissionCounts[englishWord] += delta
-                    except KeyError:
-                        emissionCounts[englishWord] = delta
-                    try:
-                        alignmentCounts[(j, i, l, m)] += delta
-                    except KeyError:
-                        alignmentCounts[(j, i, l, m)] = delta
-                    try:
-                        alignmentCounts[(i, l, m)] += delta
-                    except KeyError:
-                        alignmentCounts[(i, l, m)] = delta
+                    incrementOrInsert(emissionCounts, (sourceWord, targetWord), delta)
+                    incrementOrInsert(emissionCounts, sourceWord, delta)
+                    incrementOrInsert(alignmentCounts, (j, i, pair), delta)
+                    incrementOrInsert(alignmentCounts, (i, pair), delta)
 
         # update the parameters
         for key in modifiedEmissionKeys:
@@ -203,28 +181,24 @@ def trainParameters(englishSentenceList, frenchSentenceList, frenchVocabSize, em
 
         if modelNo == 2:
             for key in modifiedAlignmentKeys:
-                alignmentParameters[key] = float(alignmentCounts[key]) / float(alignmentCounts[(key[1], key[2], key[3])])
+                key[2].alignment[(key[0], key[1])] = float(alignmentCounts[key]) / float(alignmentCounts[(key[1], key[2])])
 
 
 # this class predicts the alignments and prints them to standard out.
-def makeAndPrintPredictions(englishSentenceList, frenchSentenceList,
-                            emissionParameters, alignmentParameters,
+def makeAndPrintPredictions(sentencePairs,
+                            emissionParameters,
                             distanceParameter):
-    for currentIndex in xrange(0, 1000):
-        currentEnglishExampleWordList = englishSentenceList[currentIndex]
-        currentFrenchExampleWordList = frenchSentenceList[currentIndex]
-        l = len(currentEnglishExampleWordList)
-        m = len(currentFrenchExampleWordList)
+    for pair in sentencePairs:
         alignmentString = ''
-        for i in xrange(0, len(currentFrenchExampleWordList)):
-            frenchWord = currentFrenchExampleWordList[i]
+        for i in xrange(0, len(pair.target)):
+            targetWord = pair.target[i]
             alignmentString = alignmentString + str(i)
             currentMaximumIndex = 0
             currentMaximum = 0.0
-            for j in xrange(0, len(currentEnglishExampleWordList)):
-                englishWord = currentEnglishExampleWordList[j]
-                if currentMaximum < emissionParameters.getProbability(englishWord, frenchWord) * alignmentParameters[j, i, l, m] * pow(distanceParameter, abs(i - j)):
-                    currentMaximum = emissionParameters.getProbability(englishWord, frenchWord) * alignmentParameters[j, i, l, m] * pow(distanceParameter, abs(i - j))
+            for j in xrange(0, len(pair.source)):
+                sourceWord = pair.source[j]
+                if currentMaximum < emissionParameters.getProbability(sourceWord, targetWord) * pair.alignment[j, i] * pow(distanceParameter, abs(i - j)):
+                    currentMaximum = emissionParameters.getProbability(sourceWord, targetWord) * pair.alignment[j, i] * pow(distanceParameter, abs(i - j))
                     currentMaximumIndex = j
             alignmentString = alignmentString + '-' + str(currentMaximumIndex) + ' '
 
@@ -234,8 +208,8 @@ def makeAndPrintPredictions(englishSentenceList, frenchSentenceList,
 
 def main():
     # read the files
-    englishSentenceList = readSentenceFile('data/hansards.e', 9999)
-    frenchSentenceList = readSentenceFile('data/hansards.f', 9999)
+    englishSentenceList = readSentenceFile('data/hansards.e', 100)
+    frenchSentenceList = readSentenceFile('data/hansards.f', 100)
     developmentAlignmentsList = readFile('data/hansards.a', 37)
 
     # get the french vocab
@@ -247,20 +221,21 @@ def main():
 
     # create the parameters for training
     emissionParameters = EmissionParameters(englishVocabulary, frenchVocabulary)
-    alignmentParameters = AlignmentParameters(englishSentenceList, frenchSentenceList)
+    #alignmentParameters = AlignmentParameters(englishSentenceList, frenchSentenceList)
+    sentencePairs = [SentencePair(x, y) for (x, y) in zip(englishSentenceList, frenchSentenceList)]
     frenchVocabSize = len(frenchVocabulary)
 
     # train the EM parameters for model 1
-    trainParameters(englishSentenceList, frenchSentenceList, frenchVocabSize,
-                    emissionParameters, alignmentParameters, 10, 1)
+    trainParameters(sentencePairs, frenchVocabSize,
+                    emissionParameters, 10, 1)
 
     # train the EM parameters for model 2
-    trainParameters(englishSentenceList, frenchSentenceList, frenchVocabSize,
-                    emissionParameters, alignmentParameters, 10, 2)
+    trainParameters(sentencePairs, frenchVocabSize,
+                    emissionParameters, 10, 2)
 
     # write the predictions to file
-    makeAndPrintPredictions(englishSentenceList, frenchSentenceList,
-                            emissionParameters, alignmentParameters,
+    makeAndPrintPredictions(sentencePairs,
+                            emissionParameters,
                             distanceParameter)
 
 main()
