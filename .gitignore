@@ -1,3 +1,4 @@
 *.o
 *.pyc
 aligner
+.DS_Store
