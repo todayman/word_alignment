@@ -15,6 +15,8 @@ import itertools
 import time
 
 from HMMOperations.HMMAlignmentHandler import HMMAlignmentHander
+from align import fetchTranslationParameters
+
 start = time.time()
 parser = argparse.ArgumentParser(description="Aligner that uses the HMM")
 parser.add_argument('--target_sentence_file', type=argparse.FileType('r'),
@@ -40,7 +42,9 @@ for line in itertools.islice(args.target_sentence_file, args.sentence_count):
 totalHiddenStatesList = list(set([item for sublist in hiddenStatesLists for item in sublist]))
 totalObservationsList = list(set([item for sublist in observationsLists for item in sublist]))
 
-hmmAlignmentHandlerObject = HMMAlignmentHander(totalHiddenStatesList, totalObservationsList)
+emissionParameters = fetchTranslationParameters()
+
+hmmAlignmentHandlerObject = HMMAlignmentHander(totalHiddenStatesList, totalObservationsList, emissionParameters)
 hmmAlignmentHandlerObject.TrainAligner(hiddenStatesLists, observationsLists)
 alignmentsList = hmmAlignmentHandlerObject.ComputeAlignments(hiddenStatesLists, observationsLists)
 

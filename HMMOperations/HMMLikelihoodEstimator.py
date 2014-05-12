@@ -3,16 +3,19 @@
 
 class HMMLikelihoodEstimator:
 
-    def __init__(self,uniformEmissionProbability, uniformTransitionProbability):
+    def __init__(self, uniformEmissionProbability, uniformTransitionProbability):
         self.uniformEmissionProbability = uniformEmissionProbability
         self.uniformTransitionProbability = uniformTransitionProbability
 
-
-    def ForwardProbabilityComputer(self,hiddenStatesList, observationsList,
+    def ForwardProbabilityComputer(self, hiddenStatesList, observationsList,
                                    emissionProbabilityDict, transitionProbabilityDict):
-
         forwardProbabilityDict = {}
         forwardProbabilityDict[-1] = [("<s>", 1.0)]
+
+        observationLength = len(hiddenStatesList)
+
+        if observationLength not in transitionProbabilityDict:
+            transitionProbabilityDict[observationLength] = {}
 
         for timeStep in xrange(0,len(observationsList)):
             forwardProbabilityDict[timeStep] = []
@@ -23,11 +26,11 @@ class HMMLikelihoodEstimator:
                 for previousStateEntry in forwardProbabilityDict[timeStep - 1]:
                     previousState = previousStateEntry[0]
                     previousStateForwardProbability = float(previousStateEntry[1])
-                    forwardProb = forwardProb + (previousStateForwardProbability * transitionProbabilityDict.get((hiddenState, previousState), self.uniformTransitionProbability))
-                forwardProb = forwardProb * emissionProbabilityDict.get((observationsList[timeStep], hiddenState), self.uniformEmissionProbability)
+                    forwardProb += previousStateForwardProbability * transitionProbabilityDict[observationLength].get((hiddenState,previousState), 1.0 / float(observationLength))
+                forwardProb *= emissionProbabilityDict.get((observationsList[timeStep], hiddenState), self.uniformEmissionProbability)
 
                 forwardProbList.append((hiddenState, forwardProb))
-                scaleFactor = scaleFactor + forwardProb
+                scaleFactor += forwardProb
 
             for hiddenState, forwardProb in forwardProbList:
                 forwardProbabilityDict[timeStep].append((hiddenState, float(forwardProb) / float(scaleFactor)))
@@ -38,27 +41,25 @@ class HMMLikelihoodEstimator:
         for previousStateEntry in forwardProbabilityDict[len(observationsList) - 1]:
             previousState = previousStateEntry[0]
             previousStateForwardProbability = float(previousStateEntry[1])
-            try:
-                forwardProb = forwardProb + (previousStateForwardProbability * transitionProbabilityDict[("</s>", previousState)])
-            except:
-                transitionProbabilityDict[("</s>", previousState)] = self.uniformTransitionProbability
-                forwardProb = forwardProb + (previousStateForwardProbability * transitionProbabilityDict[("</s>", previousState)])
+            forwardProb += previousStateForwardProbability * transitionProbabilityDict[observationLength].get(("</s>", previousState), 1.0 / float(observationLength))
 
         forwardProbabilityDict[len(observationsList)] = [("</s>", forwardProb)]
-        return forwardProbabilityDict
 
+        return forwardProbabilityDict
 
     def BackWardProbabilityComputer(self, hiddenStatesList, observationsList,
                                     emissionProbabilityDict, transitionProbabilityDict):
         BackwardProbabilityDict = {}
+        observationLength = len(hiddenStatesList)
+
         BackwardProbabilityDict[len(observationsList)] = [("</s>", 1.0)]
         BackwardProbabilityDict[len(observationsList)-1] = []
         scaleFactor = 0.0
 
         backProbList = []
         for hiddenState in hiddenStatesList:
-            backProbList.append((hiddenState, transitionProbabilityDict[("</s>", hiddenState)]))
-            scaleFactor = scaleFactor + transitionProbabilityDict[("</s>", hiddenState)]
+            backProbList.append((hiddenState, transitionProbabilityDict[observationLength][("</s>", hiddenState)]))
+            scaleFactor += transitionProbabilityDict[observationLength][("</s>", hiddenState)]
 
         for hiddenState, backwardProb in backProbList:
             BackwardProbabilityDict[len(observationsList) - 1].append((hiddenState, float(backwardProb) / float(scaleFactor)))
@@ -68,19 +69,20 @@ class HMMLikelihoodEstimator:
             scaleFactor = 0.0
             backProbList = []
             for hiddenState in hiddenStatesList:
-                backwardProb = 0.0
-                for nextStateEntry in BackwardProbabilityDict[timeStep + 1]:
-                    nextState = nextStateEntry[0]
-                    nextStateBackwardProbability = float(nextStateEntry[1])
+               backwardProb = 0.0
+               for nextStateEntry in BackwardProbabilityDict[timeStep+1]:
+                   nextState=nextStateEntry[0]
+                   nextStateBackwardProbability = float(nextStateEntry[1])
 
-                    backwardProb = backwardProb + (nextStateBackwardProbability *
-                                                   transitionProbabilityDict[(nextState, hiddenState)]*
-                                                   emissionProbabilityDict[(observationsList[timeStep + 1], nextState)])
+                   backwardProb = backwardProb + (nextStateBackwardProbability*
+                                                  transitionProbabilityDict[observationLength][(nextState,hiddenState)]*
+                                                  emissionProbabilityDict[(observationsList[timeStep+1],nextState)])
 
-                backProbList.append((hiddenState, backwardProb))
-                scaleFactor = scaleFactor + backwardProb
+               backProbList.append((hiddenState,backwardProb))
+               scaleFactor = scaleFactor + backwardProb
 
-            for hiddenState, prob in backProbList:
+
+            for hiddenState,prob in backProbList:
                 BackwardProbabilityDict[timeStep].append((hiddenState, float(prob) / float(scaleFactor)))
 
         BackwardProbabilityDict[-1] = []
@@ -89,18 +91,16 @@ class HMMLikelihoodEstimator:
             nextState = nextStateEntry[0]
             nextStateBackwardProbability = float(nextStateEntry[1])
             backwardProb = backwardProb + (nextStateBackwardProbability *
-                                           transitionProbabilityDict[(nextState, "<s>")] *
+                                           transitionProbabilityDict[observationLength][(nextState, "<s>")] *
                                            emissionProbabilityDict[(observationsList[0], nextState)])
 
         BackwardProbabilityDict[-1].append(("<s>", backwardProb))
+
         return BackwardProbabilityDict
 
     def ComputeDataLikelihood(self, hiddenStatesList, observationsList, emissionProbabilityDict, transitionProbabilityDict):
+
         forwardProbabilityDict = self.ForwardProbabilityComputer(hiddenStatesList, observationsList, emissionProbabilityDict, transitionProbabilityDict)
         backwardProababilityDict = self.BackWardProbabilityComputer(hiddenStatesList, observationsList, emissionProbabilityDict, transitionProbabilityDict)
-        dataLikelihood = 0.0
 
-        for index in xrange(0, len(hiddenStatesList)):
-            dataLikelihood = dataLikelihood + (backwardProababilityDict[0][index][1] * forwardProbabilityDict[0][index][1])
-
-        return (forwardProbabilityDict, backwardProababilityDict, dataLikelihood)
+        return (forwardProbabilityDict, backwardProababilityDict)

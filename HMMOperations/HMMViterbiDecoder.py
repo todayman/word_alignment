@@ -14,23 +14,36 @@ class HMMViterbiDecoder:
         self.GenerateViterbiLattice(backPointerDict, hiddenStatesList, observationsList)
         return self.ExtractViterbiPath(backPointerDict, hiddenStatesList, observationsList)
 
-
-    def GenerateViterbiLattice(self,backPointerDict, hiddenStatesList, observationsList):
+    def GenerateViterbiLattice(self, backPointerDict, hiddenStatesList, observationsList):
         viterbiProbabilityDict = {}
         viterbiProbabilityDict[-1] = [("<s>", 0.0)]
 
+        observationLength = len(hiddenStatesList)
+    
         for timeStep in xrange(0, len(observationsList)):
             backPointerDict[timeStep] = {}
             viterbiProbabilityDict[timeStep] = []
+
             for hiddenState in hiddenStatesList:
+                try:
+                    # TODO really?  what's going on with the exceptions here
+                    x = (log(self.emissionProbabilityDict[(observationsList[timeStep], hiddenState)]))
+                except:
+                    continue
+
                 viterbiProb = - sys.maxint
-                bestState = hiddenState
-                for previousStateEntry in viterbiProbabilityDict[timeStep - 1]:
+                bestState = ""
+                for previousStateEntry in viterbiProbabilityDict[timeStep- 1]:
                     previousState = previousStateEntry[0]
                     previousStateViterbiProbability = float(previousStateEntry[1])
 
-                    if previousStateViterbiProbability + log(self.transitionProbabilityDict[(hiddenState, previousState)]) > viterbiProb:
-                        viterbiProb = previousStateViterbiProbability + log(self.transitionProbabilityDict[(hiddenState, previousState)])
+                    try:
+                        x = (log(self.transitionProbabilityDict[observationLength][(hiddenState, previousState)]))
+                    except:
+                        continue
+
+                    if previousStateViterbiProbability + log(self.transitionProbabilityDict[observationLength][(hiddenState, previousState)]) > viterbiProb:
+                        viterbiProb = previousStateViterbiProbability + log(self.transitionProbabilityDict[observationLength][(hiddenState, previousState)])
                         bestState = previousState
 
                 viterbiProb = viterbiProb + log(self.emissionProbabilityDict[(observationsList[timeStep], hiddenState)])
@@ -43,16 +56,19 @@ class HMMViterbiDecoder:
         for previousStateEntry in viterbiProbabilityDict[len(observationsList) - 1]:
             previousState = previousStateEntry[0]
             previousStateViterbiProbability = float(previousStateEntry[1])
-            if previousStateViterbiProbability + log(self.transitionProbabilityDict[("</s>",previousState)]) > viterbiProb:
-                viterbiProb = previousStateViterbiProbability + log(self.transitionProbabilityDict[("</s>", previousState)])
-                bestState = previousState
+            try:
+                if previousStateViterbiProbability + log(self.transitionProbabilityDict[observationLength][("</s>", previousState)]) > viterbiProb:
+                    viterbiProb = previousStateViterbiProbability + log(self.transitionProbabilityDict[observationLength][("</s>", previousState)])
+                    bestState = previousState
+            except:
+                continue
 
         viterbiProbabilityDict[len(observationsList)] = [("</s>", viterbiProb)]
         backPointerDict[len(observationsList)] = {}
         backPointerDict[len(observationsList)]["</s>"] = bestState
 
 
-    def ExtractViterbiPath(self, backPointerDict, hiddenStatesList, observationsList):
+    def ExtractViterbiPath(self,backPointerDict, hiddenStatesList, observationsList):
         hiddenStateObservationStateSequence = ""
         hiddenState = backPointerDict[len(observationsList)]["</s>"]
         for timeStep in xrange(len(observationsList)-1, -1, -1):
