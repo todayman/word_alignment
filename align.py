@@ -207,26 +207,22 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description='IBM Model 1&2')
-    parser.add_argument('source_filename', type=argparse.FileType('r'),
-                        help='file with sentences in the source language, i.e. English',
-                        default='data/hansards.e')
-    parser.add_argument('target_filename', type=argparse.FileType('r'),
-                        help='file with sentences in the target language, i.e. French',
-                        default='data/hansards.f')
-    parser.add_argument('align_filename', type=str,
-                        help='file with pre-done alignments',
-                        default='data/hansards.a')
-    parser.add_argument('--sentence_count', type=int,
-                        help='number of sentences to read and train on',
-                        default=100)
-    parser.add_argument('--iterations', type=int,
-                        help='number of iterations of EM',
-                        default=100)
+    parser.add_argument('--source_filename', default='data/hansards.e', type=str,
+                        help='file with sentences in the source language, i.e. English')
+    parser.add_argument('--target_filename', default='data/hansards.f', type=str,
+                        help='file with sentences in the target language, i.e. French')
+    parser.add_argument('--align_filename', default='data/hansards.a', type=str,
+                        help='file with pre-done alignments')
+    parser.add_argument('--sentence_count', default=100, type=int,
+                        help='number of sentences to read and train on')
+    parser.add_argument('--iterations', default=10, type=int,
+                        help='number of iterations of EM')
 
+    args = parser.parse_args()
     # read the files
-    englishSentenceList = readSentenceFile(parser.source_filename, parser.sentence_count)
-    frenchSentenceList = readSentenceFile(parser.target_filename, parser.sentence_count)
-    developmentAlignmentsList = readFile(parser.align_filename)
+    englishSentenceList = readSentenceFile(args.source_filename, args.sentence_count)
+    frenchSentenceList = readSentenceFile(args.target_filename, args.sentence_count)
+    developmentAlignmentsList = readFile(args.align_filename)
 
     # get the french vocab
     englishVocabulary = populateVocabulary(englishSentenceList)
@@ -242,11 +238,11 @@ def main():
 
     # train the EM parameters for model 1
     trainParameters(sentencePairs, frenchVocabSize,
-                    emissionParameters, parser.iterations, 1)
+                    emissionParameters, args.iterations, 1)
 
     # train the EM parameters for model 2
     trainParameters(sentencePairs, frenchVocabSize,
-                    emissionParameters, parser.iterations, 2)
+                    emissionParameters, args.iterations, 2)
 
     # write the predictions to file
     makeAndPrintPredictions(sentencePairs,
