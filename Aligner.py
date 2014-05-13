@@ -18,7 +18,6 @@ import cProfile
 
 from HMMOperations.HMMAlignmentHandler import HMMAlignmentHander
 
-from PostProcessor import printAl
 from align import fetchTranslationParameters
 
 
