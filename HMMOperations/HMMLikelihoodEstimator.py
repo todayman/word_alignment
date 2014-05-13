@@ -14,7 +14,7 @@ class HMMLikelihoodEstimator:
         forwardProbabilityDict={}
         forwardProbabilityDict[-1] = [("<s>",1.0)]
 
-        observationLength = len(hiddenStatesList)
+        observationLength = len(hiddenStatesList)*len(observationsList)
 
         if not observationLength in transitionProbabilityDict:
             transitionProbabilityDict[observationLength] = {}
@@ -71,7 +71,8 @@ class HMMLikelihoodEstimator:
 
 
         BackwardProbabilityDict={}
-        observationLength = len(hiddenStatesList)
+        observationLength = len(hiddenStatesList) * len(observationsList)
+
 
         BackwardProbabilityDict[len(observationsList)] = [("</s>",1.0)]
         BackwardProbabilityDict[len(observationsList)-1] = []

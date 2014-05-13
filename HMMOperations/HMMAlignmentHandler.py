@@ -38,9 +38,9 @@ class HMMAlignmentHander:
             hmmParameterTrainerObject.MaximizationStep(self.transitionProbabilityDict,self.emissionProbabilityDict)
 
 
-    def ComputeAlignments(self,hiddenStatesLists,observationsLists):
+    def ComputeAlignments(self,hiddenStatesLists,observationsLists,distanceParameter):
 
-        hmmViterbiDecoderObject = HMMViterbiDecoder(self.transitionProbabilityDict,self.emissionProbabilityDict)
+        hmmViterbiDecoderObject = HMMViterbiDecoder(self.transitionProbabilityDict,self.emissionProbabilityDict,distanceParameter)
         alignmentList = []
         numSentences = 0
         for hiddenStatesList,observationsList in zip(hiddenStatesLists,observationsLists):

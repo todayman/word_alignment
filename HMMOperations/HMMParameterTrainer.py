@@ -11,7 +11,7 @@ class HMMParameterTrainer:
                     emissionProbabilityDict,transitionProbabilityDict,
                     forwardProbabilityDict,backwardProbabilityDict):
 
-        observationLength = len(hiddenStatesList)
+        observationLength = len(hiddenStatesList) * len(observationsList)
 
         if not observationLength in self.transitionCountDict:
             self.transitionCountDict[observationLength]={}

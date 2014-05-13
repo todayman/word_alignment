@@ -17,7 +17,9 @@ import time
 import cProfile
 
 from HMMOperations.HMMAlignmentHandler import HMMAlignmentHander
-from align import fetchTranslationParamaters
+
+from PostProcessor import printAl
+from align import fetchTranslationParameters
 
 
 start = time.time()
@@ -41,13 +43,15 @@ for line in itertools.islice(frenchFileHandle,numTrainingLines):
 totalHiddenStatesList = list(set([item for sublist in hiddenStatesLists for item in sublist]))
 totalObservationsList = list(set([item for sublist in observationsLists for item in sublist]))
 
-emissionParameters = fetchTranslationParamaters()
+emissionParameters,distanceParameter = fetchTranslationParameters()
 
 hmmAlignmentHandlerObject = HMMAlignmentHander(totalHiddenStatesList,totalObservationsList,emissionParameters)
 hmmAlignmentHandlerObject.TrainAligner(hiddenStatesLists,observationsLists)
-alignmentsList=hmmAlignmentHandlerObject.ComputeAlignments(hiddenStatesLists,observationsLists)
+alignmentsList=hmmAlignmentHandlerObject.ComputeAlignments(hiddenStatesLists,observationsLists,distanceParameter)
+
 for alignment in alignmentsList:
-    print(alignment)
+	print(alignment)
+
 
 end = time.time()
 
