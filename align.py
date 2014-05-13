@@ -140,26 +140,26 @@ def trainParameters(sentencePairs, frenchVocabSize, emissionParameters, numItera
 
                 if modelNo == 1:
                     for w in pair.source:
-                        denominator += emissionParameters.getProbability(w, targetWord)
+                        denominator += emissionParameters.getProbability(targetWord,w)
 
                 elif modelNo == 2:
                     for count in xrange(0, len(pair.source)):
                         try:
                             #print('pair.alignment is ' + str(pair.alignment))
                             denominator = denominator + (pair.alignment[(count, i)] *
-                                    emissionParameters.getProbability(pair.source[count], targetWord))
+                                    emissionParameters.getProbability(targetWord,pair.source[count]))
                         except KeyError:
                             pair.alignment[(count, i)] = 1 / float(len(pair.source))
                             denominator += (pair.alignment[(count, i)] *
-                                    emissionParameters[(pair.source[count], targetWord)])
+                                    emissionParameters[(targetWord,pair.source[count])])
 
                 for j in xrange(0, len(pair.source)):
                     sourceWord = pair.source[j]
-                    modifiedEmissionKeys.append((sourceWord, targetWord))
+                    modifiedEmissionKeys.append((targetWord, sourceWord))
                     modifiedAlignmentKeys.append((j, i, pair))
 
                     # calculate the delta parameter
-                    delta = emissionParameters.getProbability(sourceWord, targetWord)
+                    delta = emissionParameters.getProbability(targetWord, sourceWord)
 
                     if modelNo == 2:
                         delta = delta * pair.alignment[(j, i)]
@@ -167,14 +167,14 @@ def trainParameters(sentencePairs, frenchVocabSize, emissionParameters, numItera
                     delta = float(delta) / float(denominator)
 
                     # update the counts
-                    incrementOrInsert(emissionCounts, (sourceWord, targetWord), delta)
+                    incrementOrInsert(emissionCounts, (targetWord, sourceWord), delta)
                     incrementOrInsert(emissionCounts, sourceWord, delta)
                     incrementOrInsert(alignmentCounts, (j, i, pair), delta)
                     incrementOrInsert(alignmentCounts, (i, pair), delta)
 
         # update the parameters
         for key in modifiedEmissionKeys:
-            emissionParameters.setProbability(key[0], key[1], float(emissionCounts[key]) / float(emissionCounts[key[0]]))
+            emissionParameters.setProbability(key[0], key[1], float(emissionCounts[key]) / float(emissionCounts[key[1]]))
 
         if modelNo == 2:
             for key in modifiedAlignmentKeys:
@@ -203,7 +203,7 @@ def makeAndPrintPredictions(sentencePairs,
         print(alignmentString)
 
 
-def main():
+def fetchTranslationParameters():
     import argparse
 
     parser = argparse.ArgumentParser(description='IBM Model 1&2')
@@ -213,7 +213,7 @@ def main():
                         help='file with sentences in the target language, i.e. French')
     parser.add_argument('--align_filename', default='data/hansards.a', type=str,
                         help='file with pre-done alignments')
-    parser.add_argument('--sentence_count', default=100, type=int,
+    parser.add_argument('--sentence_count', default=10000, type=int,
                         help='number of sentences to read and train on')
     parser.add_argument('--iterations', default=10, type=int,
                         help='number of iterations of EM')
@@ -240,13 +240,9 @@ def main():
     trainParameters(sentencePairs, frenchVocabSize,
                     emissionParameters, args.iterations, 1)
 
-    # train the EM parameters for model 2
     trainParameters(sentencePairs, frenchVocabSize,
                     emissionParameters, args.iterations, 2)
 
-    # write the predictions to file
-    makeAndPrintPredictions(sentencePairs,
-                            emissionParameters,
-                            distanceParameter)
 
-main()
+    return (emissionParameters._changedParameters,distanceParameter)
+
